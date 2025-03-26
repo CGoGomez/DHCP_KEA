@@ -76,6 +76,7 @@ está en la misma red, es recomendable ponerle un nombre que sea reconocible den
 VirtualBox para agilizar además de darle un toque personal y reconocible.
 
 4. Configurando KEA
+
 KEA tiene una configuración curiosa con respecto a otros servicios DHCP, su configuración se encuentra en el directorio **/etc/kea** en donde encontraremos configuración base para
 IPv4 e IPv6, con los respectivos nombres **kea-dhcp4.conf** y **kea-dhcp6.conf** pero a nosotros solo nos interesa el primero, para la configuración IPv4, que centra la configurción
 de la tarjeta de red que hemos configurado.
@@ -140,3 +141,6 @@ KEA te otorgan lo que es la estructura principal del arhivo, se ve algo más o m
   }
 }
 ```
+En teoría esto debería de funcionar correctamente, al entrar en nuestro cliente y reiniciar el servicio de internet, al intentar buscar una nueva IP entonces encontrará la
+petición de nuestro servidor, con el cual a la escucha deberá reconocer la MAC del cliente y entonces asignarle la IP indicada en su propia reserva, la reserva es única por
+cada MAC, ningún otro PC puede recibir la IP reservada que en este caso es de nuestro cliente Windows.
