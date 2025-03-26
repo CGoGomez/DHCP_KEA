@@ -51,17 +51,92 @@ archivo **/etc/network/interfaces** algo más o menos así:
 auto lo
 iface lo inet loopback
 
-# Configuración de la tarjeta de red base.
+# Configuración de la tarjeta de red base con salida a internet.
 auto **Nombre Tarjeta 1**
 iface **Nombre Tarjeta 1** inet static
       address IP estática
       netmask Máscara de Red de la salida a internet
       gateway Puerta de enlace
 
+# Confifuración de la tarjeta que usaremos como parte del servicio
 auto **Nombre Tarjeta 2**
 iface **Nombre tarjeta 2** inet static
       address IP estática de servicio
       netmask Máscara de red de la red del servicio
 ```
+Tras esto, están configuradas ambas tarjetad de red, pero los cambios no están aplicados hasta que no reiniciemos el servico de red.
+``` bash
+systemctl restart networking.service
+```
+Ahora sí, al realizar el comando **ip a** debería mostrarte las dos interfaces de red con las IPs que has asignado. Lo que quedaría por hacer antes de empezar a configurar KEA es 
+comprobar que nuestra máquina tiene acceso a internet, para eso es tan sencillo como realizar un ping a cualquier página web, si todo está bien configurado la interfaz principal debería
+de darnos conexión y el resultado en milisegundos.
+Lo último, debemos añadir en nuestra máquina cliente una tarjeta de red, exclusivamente una con configuración de red interna que permita todo tipo de conexiones. Para asegurarnos de que
+está en la misma red, es recomendable ponerle un nombre que sea reconocible dentro de la propia red interna, cualquier nombre que sea distintivo con respecto a la red interna por defecto de
+VirtualBox para agilizar además de darle un toque personal y reconocible.
 
+4. Configurando KEA
+KEA tiene una configuración curiosa con respecto a otros servicios DHCP, su configuración se encuentra en el directorio **/etc/kea** en donde encontraremos configuración base para
+IPv4 e IPv6, con los respectivos nombres **kea-dhcp4.conf** y **kea-dhcp6.conf** pero a nosotros solo nos interesa el primero, para la configuración IPv4, que centra la configurción
+de la tarjeta de red que hemos configurado.
+Los archivos de configuración de KEA están configurados en formato json, un formato que si bien es bastante tedioso de escribir; se puede comprender. En la documentación oficial de
+KEA te otorgan lo que es la estructura principal del arhivo, se ve algo más o menos de la siguiente manera:
 
+```json
+{
+  "Dhcp4": {
+    "interfaces-config": {
+      "interfaces": [
+        "Tarjeta de Red 2"
+      ],
+      "dhcp-socket-type": "raw"
+    },
+    "reservations-global": false,
+    "reservations-out-of-pool": true,
+    "valid-lifetime": 4000,
+    "renew-timer": 1000,
+    "rebind-timer": 2000,
+    "subnet4": [
+      {
+        "subnet": "192.168.100.0/24",
+        "match-client-id": false,
+        "option-data": [
+          {
+            "name": "routers",
+            "data": "192.168.100.1"
+          },
+          {
+            "name": "domain-name-servers",
+            "data": "9.9.9.9"
+          },
+          {
+            "name": "ntp-servers",
+            "data": "192.168.100.1"
+          },
+          {
+            "name": "domain-name",
+            "data": "dominio-100.test"
+          }
+        ],
+        "pools": [
+          {
+            "pool": "192.168.100.100-192.168.100.199"
+          }
+        ],
+        "reservations": [
+          {
+            "hw-address": "Dirección MAC de la tarjeta de red del cliente",
+            "ip-address": "192.168.100.11"
+          }
+        ]
+      }
+    ],
+    "loggers": [
+      {
+        "name": "*",
+        "severity": "DEBUG"
+      }
+    ]
+  }
+}
+```
